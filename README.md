@@ -1,2 +1,3 @@
 # livebooks
-Livebooks of examples from https://elixirsimplified.com
+
+Livebooks that were used as the base for the posts on https://elixirsimplified.com.
