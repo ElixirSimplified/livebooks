@@ -1,0 +1,104 @@
+# Factories with ExMachina - Avoid duplicated records
+
+```elixir
+Mix.install([
+  {:ex_machina, "~> 2.7"},
+  {:ecto_sql, "~> 3.10"},
+  {:ecto, "~> 3.10"},
+  {:postgrex, "~> 0.17.1"}
+])
+```
+
+## Section
+
+```elixir
+defmodule MyApp.Repo do
+  use Ecto.Repo,
+    otp_app: :my_app,
+    adapter: Ecto.Adapters.Postgres
+end
+```
+
+```elixir
+defmodule MyApp.Users do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias MyApp.Accounts
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "users" do
+    field(:name, :string)
+    field(:email, :string)
+
+    has_many(:accounts, Accounts)
+    timestamps()
+  end
+
+  def changeset(schema \\ %__MODULE__{}, attrs) do
+    schema
+    |> cast(attrs, [:name, :email])
+
+    # ...
+  end
+end
+
+defmodule MyApp.Accounts do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias MyApp.Users
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "accounts" do
+    field(:provider, :string)
+    field(:status, :string)
+
+    belongs_to(:user, Users)
+    timestamps()
+  end
+
+  def changeset(schema \\ %__MODULE__{}, attrs) do
+    schema
+    |> cast(attrs, [:provider, :user_id])
+
+    # ...
+  end
+end
+```
+
+```elixir
+{:ok, _} = Application.ensure_all_started(:ex_machina)
+{:ok, _} = MyApp.Repo.start_link(database: "ex_machina_test")
+```
+
+```elixir
+defmodule MyApp.Factory do
+  use ExMachina.Ecto, repo: MyApp.Repo
+
+  def user_factory do
+    %MyApp.Users{
+      name: "Jane Smith",
+      email: sequence(:email, &"email-#{&1}@example.com")
+    }
+  end
+
+  def account_factory do
+    %MyApp.Accounts{
+      user: insert(:user),
+      provider: "email",
+      status: "created"
+    }
+  end
+end
+```
+
+```elixir
+alias MyApp.Factory
+alias MyApp.Repo
+
+user = Factory.insert(:user, name: "John Doe")
+account = Factory.insert(:account, user: user)
+```
