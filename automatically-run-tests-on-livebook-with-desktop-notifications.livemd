@@ -1,0 +1,36 @@
+# Automatically run tests on Livebook with desktop notifications
+
+```elixir
+Mix.install([
+  {:ex_unit_notifier, "~> 1.3"}
+])
+```
+
+## Section
+
+```elixir
+defmodule Converter do
+  def slug(value) do
+    String.replace(value, " ", "--")
+  end
+end
+```
+
+## Tests
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+ExUnit.configure(formatters: [ExUnit.CLIFormatter, ExUnitNotifier])
+ExUnit.start(autorun: false)
+
+defmodule ConverterTest do
+  use ExUnit.Case
+
+  test "convert simple string to url slug" do
+    assert Converter.slug("this is my string") == "this-is-my-string"
+  end
+end
+
+ExUnit.run()
+```
